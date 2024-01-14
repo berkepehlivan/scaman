@@ -1,0 +1,13 @@
+networkx
+matplotlib
+mpi4py
+numpy
+pandas
+petsc4py
+pyflann
+scipy
+sklearn
+slepc4py
+time
+
+

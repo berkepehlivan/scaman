@@ -1,0 +1,84 @@
+.
+├── AUTHORS.rst
+├── CONTRIBUTING.rst
+├── HISTORY.rst
+├── LICENSE
+├── MANIFEST.in
+├── Makefile
+├── README.md
+├── README.rst
+├── docs
+│   ├── Makefile
+│   ├── authors.rst
+│   ├── conf.py
+│   ├── contributing.rst
+│   ├── history.rst
+│   ├── index.rst
+│   ├── installation.rst
+│   ├── make.bat
+│   ├── readme.rst
+│   └── usage.rst
+├── requirements.txt
+├── scaman
+│   ├── __init__.py
+│   ├── algorithms
+│   │   ├── le.py
+│   │   ├── lle.py
+│   │   ├── mds.py
+│   │   └── pca.py
+│   ├── cli.py
+│   ├── eigensolvers
+│   │   ├── __init__.py
+│   │   ├── feast_eigensolver.py
+│   │   ├── numpy_eigensolver.py
+│   │   ├── scipy_eigensolver.py
+│   │   └── slepc_eigensolver.py
+│   ├── libraries.txt
+│   ├── parallel
+│   │   ├── le.py
+│   │   ├── lle.py
+│   │   ├── mds.py
+│   │   └── pca.py
+│   ├── scaman.py
+│   ├── serial
+│   │   ├── __init__.py
+│   │   ├── le.py
+│   │   ├── le_flann.py
+│   │   ├── lle.py
+│   │   ├── mds.py
+│   │   └── pca.py
+│   └── utils
+│       ├── __init__.py
+│       ├── convert_to_petsc_mat.py
+│       ├── flann.py
+│       └── intrinsic_dimension_estimator.py
+├── scaman-swissroll.png
+├── setup.cfg
+├── setup.py
+├── tests
+│   ├── FLANN_Graph_NN_Times.ipynb
+│   ├── Feast_Eigensolver_Test.ipynb
+│   ├── Intrinsic_Dimension_Estimator_Test.ipynb
+│   ├── LE.ipynb
+│   ├── LE_Affinity_Matrix_Visualization.ipynb
+│   ├── LLE.ipynb
+│   ├── MDS.ipynb
+│   ├── MNIST_KNN_PCA_Accuracy_Test.ipynb
+│   ├── PCA.ipynb
+│   ├── __init__.py
+│   ├── data
+│   │   ├── diabetes.csv
+│   │   └── iris.csv
+│   ├── lle_steps.ipynb
+│   ├── manifold_learning.ipynb
+│   └── output
+│       ├── eigenvector_1_mds_numpy.png
+│       ├── eigenvector_1_mds_scipy.png
+│       ├── eigenvector_1_mds_slepc.png
+│       ├── eigenvector_2_mds_numpy.png
+│       ├── eigenvector_2_mds_scipy.png
+│       └── eigenvector_2_mds_slepc.png
+├── tox.ini
+└── tree.txt
+
+11 directories, 71 files
