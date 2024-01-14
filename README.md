@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # scaman
 Scalable Manifold Library for High Dimensional Data
 =======
@@ -54,20 +53,21 @@ Install Scaman using pip:
 
 ```bash
 pip install scaman
+```
 Example Usage
 
 PCA with NumPy Eigensolver
-
+```bash
 from serial.pca import PCA
 pca = PCA(n_components=2, eig_method='numpy')
 embedding_pca = pca.fit_transform(data)
-
+```
 LE with SLEPc Eigensolver
-
+```bash
 from serial.le import LE
 le = LE(data, n_components=6, k=7, solver='slepc', sigma=1, normalize=False)
 embedding_le = le.fit_transform()
-
+```
 Funding
 This project is funded by TÜBİTAK under the code XXXXX, promoting advanced research in manifold learning and data science.
->>>>>>> 5d5454d (Initial commit)
+
