@@ -68,6 +68,6 @@ from serial.le import LE
 le = LE(data, n_components=6, k=7, solver='slepc', sigma=1, normalize=False)
 embedding_le = le.fit_transform()
 ```
-Funding
+Funding:
 This project is funded by TÜBİTAK under the code XXXXX, promoting advanced research in manifold learning and data science.
 
