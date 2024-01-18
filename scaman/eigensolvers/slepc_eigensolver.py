@@ -41,7 +41,7 @@ def SlepcEigensolver(data, solver,nev,*args, **kwargs):
     # Convert numpy array to slepc/petsc matrix
     #Eigenvalues and Eigenvectors of Laplacian Matrix
     start_time_petsc_matrix = time.time()
-    global Y
+    
     petsc_matH = convert_mat_to_petsc(data, comm =PETSc.COMM_WORLD)
     print("Petsc matrix formed")
     print("Time taken to create petsc matrix: ", time.time() - start_time_petsc_matrix)
@@ -91,13 +91,20 @@ def SlepcEigensolver(data, solver,nev,*args, **kwargs):
         E.setType(SLEPc.EPS.Type.LANCZOS)
 
     E.setDimensions(nev)
-    E.setTolerances(tol=1e-3)
-    E.setFromOptions()
-    #E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
-    #EPSLanczosSetReorthog(EPS eps,EPSLanczosReorthogType reorthog)
+    tol = kwargs.get('tol', 1e-3)  # Use the provided tol value if available, otherwise default to 1e-3
+    E.setTolerances(tol=tol)
+    
+    magnitude = kwargs.get('magnitude', 'largest') # Use the provided magnitude value if available, otherwise default to largest
+    if magnitude == "largest":
+        E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
+    elif magnitude == "smallest":    
+        E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
+    
+    
 
     E.solve()
 
+    end_time_eig = time.time() - start_time_eig
 
     Print()
     Print("******************************")
@@ -119,6 +126,10 @@ def SlepcEigensolver(data, solver,nev,*args, **kwargs):
 
     nconv = E.getConverged()
     Print("Number of converged eigenpairs %d" % nconv)
+
+    Print("End time for eigen solver: ", end_time_eig)
+
+
     global eigenvalues,eigenvectors
     if nconv > 0:
         # Create the results vectors
@@ -140,10 +151,10 @@ def SlepcEigensolver(data, solver,nev,*args, **kwargs):
             eigenvalues.append(k)
             eigenvectors.append([complex(vr0, vi0) for vr0, vi0 in zip(vr.getArray(), vi.getArray())])
 
-            #if k.imag != 0.0:
-                #Print(" %9f%+9f j %12g" % (k.real, k.imag, error))
-            #else:
-                #Print(" %12f      %12g" % (k.real, error))
+            '''if k.imag != 0.0:
+                Print(" %9f%+9f j %12g" % (k.real, k.imag, error))
+            else:
+                Print(" %12f      %12g" % (k.real, error))'''
 
         #Print()
         eigenvalues = np.asarray(eigenvalues)
