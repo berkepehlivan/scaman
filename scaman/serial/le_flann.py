@@ -2,11 +2,18 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from tqdm import tqdm
+from joblib import Parallel, delayed
+
+from scipy.spatial.distance import cdist
+from scipy.spatial.distance import pdist
+from scipy.spatial.distance import squareform
+from sklearn.neighbors import NearestNeighbors
 
 from eigensolvers.numpy_eigensolver import NumpyEigensolver
 from eigensolvers.scipy_eigensolver import ScipyEigensolver
 from eigensolvers.slepc_eigensolver import SlepcEigensolver
-from sklearn.neighbors import NearestNeighbors
+
 
 class LE:
     def __init__(self, data, n_components=2, k=5, sigma=1,solver='numpy',
@@ -32,38 +39,58 @@ class LE:
         Returns:
         W (numpy array): Affinity matrix of shape (n_samples, n_samples).
         """
-        n_samples = self.data.shape[0]
-        W = np.zeros((n_samples, n_samples))
-        np.fill_diagonal(W, 1.0)
-        for i in range(n_samples):
-            distances = np.linalg.norm(self.data - self.data[i], axis=1)
-            nearest_indices = np.argsort(distances)[1:self.k+1]
-            for j in nearest_indices:
-                W[i][j] = np.exp(-distances[j]**2 / (2*self.sigma**2)) # Gaussian kernel
-                W[j][i] = W[i][j]
-        return W
-    
+
+        # Compute the pairwise distances
+        pairwise_distances = squareform(pdist(self.data))
+
+        # Get the indices of the k nearest neighbors for each point
+        nearest_indices = np.argsort(pairwise_distances, axis=1)[:, 1:self.k+1]
+
+        # Compute the Gaussian kernel for each pair of points
+        W = np.exp(-pairwise_distances**2 / (2*self.sigma**2))
+
+        # Create an affinity matrix with zeros
+        affinity_matrix = np.zeros_like(W)
+
+        # Fill the affinity matrix with the values from the Gaussian kernel for the k nearest neighbors
+        for i in tqdm(range(self.data.shape[0]), desc="Computing affinity matrix with numpy and sklearn"):
+            affinity_matrix[i, nearest_indices[i]] = W[i, nearest_indices[i]]
+            affinity_matrix[nearest_indices[i], i] = W[nearest_indices[i], i]
+        #print('affinity matrix constructed...')
+        return affinity_matrix
+
     def _compute_affinity_matrix_networkx(self):
-        G = nx.Graph()
         num_samples = self.data.shape[0]
         W = np.zeros((num_samples, num_samples))
         np.fill_diagonal(W, 1.0)
-        
-        for i in range(num_samples):
-            distances = np.linalg.norm(self.data - self.data[i], axis=1)
-            nearest_indices = np.argsort(distances)[1:self.k+1]
-            
-            for j in nearest_indices:
-                G.add_edge(i, j, weight=distances[j])
-        
-        for i in range(num_samples):
-            for j in range(i+1, num_samples):
-                if G.has_edge(i, j):
-                    dist = G[i][j]['weight']
-                    affinity = np.exp(-dist**2 / (2*self.sigma**2))
-                    W[i, j] = affinity
-                    W[j, i] = affinity
-        
+
+        # Compute all pairwise distances
+        distances = cdist(self.data, self.data)
+
+        # Create a graph
+        G = nx.from_numpy_array(distances)
+        print('Graph created...')
+        num_nodes = G.number_of_nodes()
+        num_edges = G.number_of_edges()
+        print('Number of nodes:',num_nodes)
+        print('Number of edges:',num_edges)
+
+        # Compute nearest neighbors for each point
+        nearest_indices = np.argsort(distances, axis=1)[:, 1:self.k+1]
+
+        # Add edges to the graph for k nearest neighbors
+        for i in tqdm(range(num_samples), desc="Adding edges and computing affinity with networkx"):
+            for j in nearest_indices[i]:
+                G.add_edge(i, j, weight=distances[i, j])
+
+        # Compute affinity
+        for i, j in tqdm(G.edges, desc="Computing affinity with networkx"):
+            dist = G[i][j]['weight']
+            affinity = np.exp(-dist**2 / (2*self.sigma**2))
+            W[i, j] = affinity
+            W[j, i] = affinity
+        print('affinity matrix constructed...')
+        print('W shape:',W.shape)
         return W
 
     def _compute_affinity_matrix_flann(self):
@@ -87,12 +114,36 @@ class LE:
         np.fill_diagonal(affinity_matrix, 1.0)
 
         # Construct affinity matrix based on distances
-        for i in range(num_points):
+        for i in tqdm(range(num_points), desc="Computing affinity matrix with FLANN"):
             for j in range(num_neighbors):
                 affinity_matrix[i, neighbors[i, j + 1]] = np.exp(-distances[i, j] ** 2 / (2 * self.sigma ** 2))
                 affinity_matrix[neighbors[i, j + 1], i] = np.exp(-distances[i, j] ** 2 / (2 * self.sigma ** 2))
         
         W = affinity_matrix
+        return W
+    
+
+
+    def _compute_affinity_matrix_parallel(self):
+        # Compute the pairwise distances
+        pairwise_distances = squareform(pdist(self.data))
+
+        # Get the indices of the k nearest neighbors for each point
+        nearest_indices = np.argsort(pairwise_distances, axis=1)[:, 1:self.k+1]
+
+        # Compute the Gaussian kernel for each pair of points
+        W = np.exp(-pairwise_distances**2 / (2*self.sigma**2))
+
+        # Create an affinity matrix with zeros
+        affinity_matrix = np.zeros_like(W)
+
+        # Fill the affinity matrix with the values from the Gaussian kernel for the k nearest neighbors
+        affinity_matrices = Parallel(n_jobs=-1)(delayed(compute_affinity)(i, nearest_indices, W) for i in tqdm(range(self.data.shape[0]), desc="Computing affinity matrix in parallel"))
+
+        # Sum all the affinity matrices to get the final affinity matrix
+        affinity_matrix = np.sum(affinity_matrices, axis=0)
+        W = affinity_matrix
+
         return W
     
     def _compute_unnormalized_laplacian_matrix(self, W):
@@ -108,15 +159,16 @@ class LE:
     
     def _compute_embedding(self,L,D):
         if self.solver == "numpy":
-            eigenvalues, eigenvectors = NumpyEigensolver().fit(L, num_components=self.n_components+1)
+            eigenvalues, eigenvectors = NumpyEigensolver().fit(L, num_components=self.n_components)
            
         elif self.solver == "scipy":
-            eigenvalues, eigenvectors = ScipyEigensolver().fit(L, num_components=self.n_components+1)
+            scipy_solver = ScipyEigensolver(solver='arpack')
+            eigenvalues, eigenvectors = scipy_solver.fit(L, num_components=self.n_components)
             
         elif self.solver == "slepc":
             eigenvalues, eigenvectors = SlepcEigensolver(L, solver=self.slepc_solver, nev=self.n_components,magnitude="smallest",
                                                          tol=1e-15,max_it=10000)
-            eigenvectors = eigenvectors[:,:self.n_components+1]
+            eigenvectors = eigenvectors[:,:self.n_components]
         else:
             raise Exception("Invalid solver. Must be one of 'numpy', 'scipy', or 'slepc'")
         
@@ -136,6 +188,9 @@ class LE:
                 return W
             elif self.affinity=='flann':
                 W = self._compute_affinity_matrix_flann()
+                return W
+            elif self.affinity=='parallel':
+                W = self._compute_affinity_matrix_parallel()
                 return W
             else:
                 print('affinity value should either be networkx or flann.')
