@@ -1,0 +1,10 @@
+numpy
+scipy
+matplotlib
+pandas
+scikit-learn
+petsc4py
+slepc4py
+mpi4py
+networkx
+tqdm
