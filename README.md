@@ -1,4 +1,3 @@
-# scaman
 Scalable Manifold Library for High Dimensional Data
 =======
 # Scaman
@@ -13,6 +12,8 @@ Scaman is a comprehensive Python package focused on manifold learning and dimens
 - **Eigensolver Integration**: Incorporates different eigensolvers like FEAST, NumPy, SciPy, and SLEPc, allowing for versatile eigenvalue problem solutions.
 - **Serial and Parallel Processing**: Supports both serial and parallel processing to accommodate different computational needs.
 - **Utility Tools**: Provides additional tools for intrinsic dimension estimation, data conversion, FLANN library for faster neighbor matrix creation ,and more.
+
+![scaman structure](scaman-structure.png)
 
 ## Algorithms
 
@@ -52,7 +53,7 @@ Ensure the following packages are installed:
 Install Scaman using pip:
 
 ```bash
-pip install scaman
+conda create --name scaman_env --file requirements.txt --channel conda-forge
 ```
 ## Example Usage
 
