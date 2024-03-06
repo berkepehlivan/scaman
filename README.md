@@ -50,7 +50,7 @@ Ensure the following packages are installed:
 - PETSc4py 
 - MPI4Py (for parallel processing)
 
-Install Scaman using pip:
+Install Scaman using conda:
 
 ```bash
 conda create --name scaman_env --file requirements.txt --channel conda-forge
